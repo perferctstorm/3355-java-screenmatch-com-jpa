@@ -3,7 +3,6 @@ package br.com.alura.screenmatch.model;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.OptionalDouble;
 
@@ -22,8 +21,8 @@ public class Serie {
     private String atores;
     private String poster;
     private String sinopse;
-    @Transient
-    private List<Episodio> episodios = new ArrayList<Episodio>();
+    @OneToMany(mappedBy = "serie", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private List<Episodio> episodios = new ArrayList<>();
 
     public Serie(){}
 
@@ -106,6 +105,7 @@ public class Serie {
     }
 
     public void setEpisodios(List<Episodio> episodios) {
+        episodios.forEach(e-> e.setSerie(this));
         this.episodios = episodios;
     }
 
@@ -118,6 +118,7 @@ public class Serie {
             ", genero='" + genero + "'" +
             ", atores= '"+ atores + "'" +
             ", poster= '" + poster + "'" +
-            ", sinopse= '" + sinopse + "']";
+            ", sinopse= '" + sinopse + "'" +
+                ", episódios: " + episodios +"]";
     }
 }
