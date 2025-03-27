@@ -1,9 +1,6 @@
 package br.com.alura.screenmatch.principal;
 
-import br.com.alura.screenmatch.model.DadosSerie;
-import br.com.alura.screenmatch.model.DadosTemporada;
-import br.com.alura.screenmatch.model.Episodio;
-import br.com.alura.screenmatch.model.Serie;
+import br.com.alura.screenmatch.model.*;
 import br.com.alura.screenmatch.repository.SerieRepository;
 import br.com.alura.screenmatch.service.ConsumoApi;
 import br.com.alura.screenmatch.service.ConverteDados;
@@ -31,9 +28,14 @@ public class Principal {
         while(opcao != 0) {
             var menu = """
                     0 - Sair
-                    1 - Buscar séries
-                    2 - Buscar episódios
-                    3- Listar Séries
+                    1 - Buscar Séries
+                    2 - Buscar Episódios
+                    3 - Listar Séries
+                    4 - Buscar Série por Nome
+                    5 - Buscar Série por Nome do Ator
+                    6 - 5 Séries Melhores Avaliadas
+                    7 - Buscar Séries por Categoria
+                    8 - Buscar Séries até Número Temporadas e Avaliação Maior ou Igual
                     """;
             System.out.println(menu);
 
@@ -51,6 +53,21 @@ public class Principal {
                 case 3:
                     listarSeriesBuscadas();
                     break;
+                case 4:
+                    buscarSeriePorTitulo();
+                    break;
+                case 5:
+                    buscarSeriePorAtor();
+                    break;
+                case 6:
+                    buscarTop5Series();
+                    break;
+                case 7:
+                    buscarSeriePorCategoria();
+                    break;
+                case 8:
+                    filtrarSeriesPorTemporadaEAvaliacao();
+                    break;
                 case 0:
                     System.out.println("Saindo...");
                     break;
@@ -61,11 +78,74 @@ public class Principal {
         }
     }
 
+    private void filtrarSeriesPorTemporadaEAvaliacao() {
+        System.out.println("Informe o Número Máximo de Temporadas: ");
+        var temporadas = leitura.nextInt();
+        System.out.println("Informe a Nota Mínima : ");
+        var notaMinima = leitura.nextDouble();
+
+        List<Serie> series = repository.findByTotalTemporadasLessThanEqualAndAvaliacaoGreaterThanEqual(temporadas, notaMinima);
+        System.out.println(String.format("Séries com até %d temporadas e nota mínima de %.2f: ", temporadas, notaMinima));
+        series.forEach(s->
+                System.out.println(
+                        String.format(" - %s, temporadas: %d, avaliação média:%.2f",
+                                s.getTitulo(), s.getTotalTemporadas(), s.getAvaliacao())
+                )
+        );
+    }
+
+    private void buscarSeriePorCategoria() {
+        System.out.println("Informe uma Categoria de Filme: ");
+        var genero = leitura.nextLine();
+
+        Categoria categoria = Categoria.fromPortugues(genero);
+        List<Serie> series = repository.findByGenero(categoria);
+
+        System.out.println(String.format("Séries da categoria %s: ", genero));
+        series.forEach(s-> System.out.println(String.format(" - %s, avaliação média:%.2f", s.getTitulo(), s.getAvaliacao())));
+    }
+
+    private void buscarTop5Series() {
+        List<Serie> series = repository.findTop5ByOrderByAvaliacaoDesc();
+        System.out.println("5 séries melhores avaliadas: ");
+        /*series.stream()
+                .sorted(
+                        Comparator.comparing(Serie::getAvaliacao).reversed()
+                )
+                .forEach(s-> System.out.println(String.format(" - %s, avaliação média:%.2f", s.getTitulo(), s.getAvaliacao())));
+         */
+        series.forEach(s-> System.out.println(String.format(" - %s, avaliação média:%.2f", s.getTitulo(), s.getAvaliacao())));
+    }
+
+    private void buscarSeriePorAtor() {
+        System.out.println("Digite o nome do ator: ");
+        var nomeAutor = leitura.nextLine();
+        System.out.println("Agora, escolha uma nota de avaliação de corte: ");
+        Double avaliacaoCorte = leitura.nextDouble();
+
+        List<Serie> series = repository.findByAtoresContainingIgnoreCaseAndAvaliacaoGreaterThanEqual(nomeAutor, avaliacaoCorte);
+
+        System.out.println(String.format("Séries em que %s trabalhou: ", nomeAutor));
+        series.forEach(s-> System.out.println(String.format(" - %s, avaliação média:%.2f", s.getTitulo(), s.getAvaliacao())));
+    }
+
+    private void buscarSeriePorTitulo() {
+        System.out.println("Escolha a série pelo nome: ");
+        String nomeSerie = leitura.nextLine();
+
+        Optional<Serie> serieBuscada = repository.findByTituloContainingIgnoreCase(nomeSerie);
+
+        if(serieBuscada.isPresent()){
+            System.out.println(String.format("Dados da série %s.", serieBuscada.get()));
+        }else{
+            System.out.println("Série não encontrada.");
+        }
+    }
+
     private void buscarSerieWeb() {
         DadosSerie dados = getDadosSerie();
         Serie serie = new Serie(dados);
         repository.save(serie);
-        //dadosSeries.add(dados);
         System.out.println(dados);
     }
 
@@ -81,11 +161,9 @@ public class Principal {
         listarSeriesBuscadas();
         DadosSerie dadosSerie = getDadosSerie();
         System.out.println("Escolha a série pelo nome: ");
-        String nomeSerie = leitura.nextLine();
+        String nomeSerie = leitura.next();
 
-        Optional<Serie> serie = series.stream()
-                .filter(s -> s.getTitulo().toLowerCase().contains(nomeSerie.toLowerCase()))
-                .findFirst();
+        Optional<Serie> serie = repository.findByTituloContainingIgnoreCase(nomeSerie);
 
         if (serie.isPresent()) {
             List<DadosTemporada> temporadas = new ArrayList<>();
