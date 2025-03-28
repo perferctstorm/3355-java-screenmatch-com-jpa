@@ -1,5 +1,7 @@
 package br.com.alura.screenmatch.desafio;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.OptionalInt;
@@ -27,5 +29,18 @@ public class Desafios {
         OptionalInt optional = OptionalInt.empty();
         optional.ifPresentOrElse (n-> System.out.println(n*n), ()-> System.out.println("Empty"));
         System.out.println();
+
+        String dateString = "29/03/2019";
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        LocalDate localDate = LocalDate.parse(dateString, formatter);
+
+        System.out.println("Type of dateString: " + dateString.getClass().getName());
+
+        System.out.println("Type of localDate: " + localDate.getClass().getName());
+
+        // Output the LocalDate
+        System.out.println("Parsed LocalDate: " + localDate);
+
+        System.out.println("Encerrado");
     }
 }
