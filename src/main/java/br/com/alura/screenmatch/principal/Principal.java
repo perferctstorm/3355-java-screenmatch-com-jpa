@@ -206,10 +206,14 @@ public class Principal {
 
     private void buscarSerieWeb() {
         DadosSerie dados = getDadosSerie();
-        Serie serie = new Serie(dados);
-        repository.save(serie);
-        System.out.println(dados);
+        salvaSerieNoRepositorio(dados);
     }
+
+    private Serie salvaSerieNoRepositorio(DadosSerie dados){
+        Serie serie = new Serie(dados);
+        System.out.println(dados);
+        return repository.save(serie);
+    };
 
     private DadosSerie getDadosSerie() {
         System.out.println("Digite o nome da série para busca");
@@ -222,16 +226,13 @@ public class Principal {
     private void buscarEpisodioPorSerie(){
         listarSeriesBuscadas();
         DadosSerie dadosSerie = getDadosSerie();
-        System.out.println("Escolha a série pelo nome: ");
-        String nomeSerie = leitura.next();
+        Optional<Serie> optSerie = repository.findByTituloContainingIgnoreCase(dadosSerie.titulo());
+        Serie serie = optSerie.orElseGet(() -> salvaSerieNoRepositorio(dadosSerie));
 
-        Optional<Serie> serie = repository.findByTituloContainingIgnoreCase(nomeSerie);
-
-        if (serie.isPresent()) {
+        if(serie.getEpisodios().isEmpty()){
             List<DadosTemporada> temporadas = new ArrayList<>();
-
-            for (int i = 1; i <= serie.get().getTotalTemporadas(); i++) {
-                var json = consumo.obterDados(ENDERECO + serie.get().getTitulo().replace(" ", "+") + "&season=" + i + API_KEY);
+            for (int i = 1; i <= serie.getTotalTemporadas(); i++) {
+                var json = consumo.obterDados(ENDERECO + serie.getTitulo().replace(" ", "+") + "&season=" + i + API_KEY);
                 DadosTemporada dadosTemporada = conversor.obterDados(json, DadosTemporada.class);
                 temporadas.add(dadosTemporada);
             }
@@ -240,10 +241,10 @@ public class Principal {
                     .stream().map(e-> new Episodio(t.numero(), e)))
                     .collect(Collectors.toList());
             episodios.stream().forEach(System.out::println);
-            serie.get().setEpisodios(episodios);
-            repository.save(serie.get());
+            serie.setEpisodios(episodios);
+            repository.save(serie);
         }else{
-            System.out.println("Série não encontrada.");
+            serie.getEpisodios().stream().forEach(System.out::println);
         }
     }
 
